@@ -83,6 +83,7 @@ namespace Dmp_Decoder
 
         #endregion
 
+        private System.Windows.Forms.Form form;
         private System.Windows.Forms.Button openFileBtn;
         private System.Windows.Forms.OpenFileDialog loadFileDialog;
         private System.Windows.Forms.PictureBox pictureBox1;

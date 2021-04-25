@@ -1,21 +1,24 @@
 ﻿using System;
 using System.Drawing;
 using System.IO;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Dmp_Decoder
 {
     public partial class Form1 : Form
     {
-        public Form1()
+        public Form1(string file = null)
         {
             InitializeComponent();
+
+            form = this;
             AllowDrop = true;
             //DragEnter += Form1_DragEnter;
             DragDrop += Form1_DragDrop;
 
 
-            openFileBtn.Click += OpenFile;
+            openFileBtn.Click += OpenFileThroughBtn;
             saveFileButton.Click += SaveFile;
             saveFileButton.Visible = false;
 
@@ -24,6 +27,8 @@ namespace Dmp_Decoder
             
             Resize += Form1_Resize;
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+
+            if (file != null) OpenFile(file);
         }
 
         public void RescaleElements(Control controller)
@@ -38,7 +43,7 @@ namespace Dmp_Decoder
             pictureBox1.Size = bitmap.Size;
             pictureBox1.Image = bitmap;
             openFileBtn.Visible = false;
-            Application.OpenForms[0].Size = pictureBox1.Size;
+            form.Size = pictureBox1.Size;
         }
 
         public void HideShowBtns()
@@ -90,6 +95,16 @@ namespace Dmp_Decoder
             }
         }
 
+        public void HandleExceptions(Exception t)
+        {
+            var result = MessageBox.Show(t.Message, "", MessageBoxButtons.AbortRetryIgnore, MessageBoxIcon.Stop);
+            if (result == DialogResult.Abort || result == DialogResult.Retry)
+            {
+                Application.Exit();
+                Environment.Exit(-1);
+            }
+        }
+
         private void SaveFile(object sender, EventArgs e)
         {
             if (saveFileDialog1.ShowDialog() == DialogResult.Cancel) return;
@@ -100,15 +115,26 @@ namespace Dmp_Decoder
             MessageBox.Show("Файл сохранён");
         }
 
-        private void OpenFile(object sender, EventArgs e)
+        private void OpenFileThroughBtn(object sender, EventArgs e)
         {
             if (loadFileDialog.ShowDialog() == DialogResult.Cancel) return;
+            OpenFile(loadFileDialog.FileName);
+        }
 
-            string filename = loadFileDialog.FileName;
+        private void OpenFile(string filename)
+        {
+            try
+            {
+                EncodeDmp(filename);
+                HideShowBtns();
+            } catch (Exception exp)
+            {
+                HandleExceptions(exp);
+                openFileBtn.Visible = true;
+                Application.DoEvents();
+            }
             
-            HideShowBtns();
-            EncodeDmp(filename);
-            RescaleElements(Application.OpenForms[0]);
+            RescaleElements(form);
         }
 
         private void Form1_Resize(object sender, EventArgs e)
