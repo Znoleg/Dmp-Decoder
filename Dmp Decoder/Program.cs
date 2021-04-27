@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using System.Windows.Forms;
 
 namespace Dmp_Decoder
@@ -26,7 +25,5 @@ namespace Dmp_Decoder
 
             Application.Run(form);
         }
-
-        
     }
 }

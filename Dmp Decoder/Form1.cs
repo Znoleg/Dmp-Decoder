@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.IO;
-using System.Threading;
 using System.Windows.Forms;
 
 namespace Dmp_Decoder
@@ -31,14 +30,7 @@ namespace Dmp_Decoder
             if (file != null) OpenFile(file);
         }
 
-        public void RescaleElements(Control controller)
-        {
-            pictureBox1.Size = controller.Size;
-
-            saveFileButton.Location = new Point(controller.Width - 150, controller.Height - 75);
-        }
-
-        public void ShowBitmap(Bitmap bitmap)
+        private void ShowBitmap(Bitmap bitmap)
         {
             pictureBox1.Size = bitmap.Size;
             pictureBox1.Image = bitmap;
@@ -46,56 +38,20 @@ namespace Dmp_Decoder
             form.Size = pictureBox1.Size;
         }
 
-        public void HideShowBtns()
+        private void RescaleElements(Control controller)
+        {
+            pictureBox1.Size = controller.Size;
+
+            saveFileButton.Location = new Point(controller.Width - 150, controller.Height - 75);
+        }
+
+        private void HideShowBtns()
         {
             openFileBtn.Visible = false;
             saveFileButton.Visible = true;
         }
 
-        public void EncodeDmp(string dmpFile)
-        {
-            if (dmpFile.Length > 0)
-            {
-                if (dmpFile.Substring(dmpFile.LastIndexOf('.')) != ".dmp")
-                {
-                    throw new ArgumentException("Not a \".dmp\" file given!");
-                }
-            }
-
-            byte[] bytes;
-            using (FileStream fsSource = new FileStream(dmpFile, FileMode.Open, FileAccess.Read))
-            {
-                bytes = new byte[fsSource.Length];
-                int bytesLeftToRead = bytes.Length;
-                int bytesRead = 0;
-
-                #region File Reading
-                while (bytesLeftToRead > 0)
-                {
-                    int n = fsSource.Read(bytes, bytesRead, bytesLeftToRead);
-
-                    if (n == 0) break;
-
-                    bytesRead += n;
-                    bytesLeftToRead -= n;
-                }
-                #endregion
-
-                int skipBytes = 0;
-                byte[] bmfhBytes = new byte[BMFH.StructSize]; Array.Copy(bytes, skipBytes, bmfhBytes, 0, bmfhBytes.Length); skipBytes += bmfhBytes.Length;
-                byte[] bmihBytes = new byte[BMIH.StructSize]; Array.Copy(bytes, skipBytes, bmihBytes, 0, bmihBytes.Length); skipBytes += bmihBytes.Length;
-                byte[] secBytes = new byte[SecBlock.StructSize]; Array.Copy(bytes, skipBytes, secBytes, 0, secBytes.Length); skipBytes += secBytes.Length;
-                BMFH bMFH = new BMFH(bmfhBytes); BMIH bMIH = new BMIH(bmihBytes); SecBlock secBlock = new SecBlock(secBytes);
-                //skipBytes = bMFH.OffBits.HexToInt();
-                byte[] imgBytes = new byte[bytes.Length - skipBytes]; Array.Copy(bytes, skipBytes, imgBytes, 0, imgBytes.Length);
-                ImageBlock imageBlock = new ImageBlock(bytes, bMIH.Width.HexToInt(), bMIH.Height.HexToInt(), bMIH.BitCount.HexToInt());
-
-                Bitmap encodedBitmap = imageBlock.GetBitmap();
-                ShowBitmap(encodedBitmap);
-            }
-        }
-
-        public void HandleExceptions(Exception t)
+        private void HandleExceptions(Exception t)
         {
             var result = MessageBox.Show(t.Message, "", MessageBoxButtons.AbortRetryIgnore, MessageBoxIcon.Stop);
             if (result == DialogResult.Abort || result == DialogResult.Retry)
@@ -149,10 +105,47 @@ namespace Dmp_Decoder
             foreach (string file in files) Console.WriteLine(file);
         }
 
-        //private void Form1_DragEnter(object sender, DragEventArgs e)
-        //{
-        //    if (e.Data.GetDataPresent(DataFormats.FileDrop)) e.Effect = DragDropEffects.Copy;
-        //}
+        private void EncodeDmp(string dmpFile)
+        {
+            if (dmpFile.Length > 0)
+            {
+                if (dmpFile.Substring(dmpFile.LastIndexOf('.')) != ".dmp")
+                {
+                    throw new ArgumentException("Not a \".dmp\" file given!");
+                }
+            }
 
+            byte[] bytes;
+            using (FileStream fsSource = new FileStream(dmpFile, FileMode.Open, FileAccess.Read))
+            {
+                bytes = new byte[fsSource.Length];
+                int bytesLeftToRead = bytes.Length;
+                int bytesRead = 0;
+
+                #region File Reading
+                while (bytesLeftToRead > 0)
+                {
+                    int n = fsSource.Read(bytes, bytesRead, bytesLeftToRead);
+
+                    if (n == 0) break;
+
+                    bytesRead += n;
+                    bytesLeftToRead -= n;
+                }
+                #endregion
+
+                int skipBytes = 0;
+                byte[] bmfhBytes = new byte[BMFH.StructSize]; Array.Copy(bytes, skipBytes, bmfhBytes, 0, bmfhBytes.Length); skipBytes += bmfhBytes.Length;
+                byte[] bmihBytes = new byte[BMIH.StructSize]; Array.Copy(bytes, skipBytes, bmihBytes, 0, bmihBytes.Length); skipBytes += bmihBytes.Length;
+                byte[] secBytes = new byte[SecBlock.StructSize]; Array.Copy(bytes, skipBytes, secBytes, 0, secBytes.Length); skipBytes += secBytes.Length;
+                BMFH bMFH = new BMFH(bmfhBytes); BMIH bMIH = new BMIH(bmihBytes); SecBlock secBlock = new SecBlock(secBytes);
+                //skipBytes = bMFH.OffBits.HexToInt();
+                byte[] imgBytes = new byte[bytes.Length - skipBytes]; Array.Copy(bytes, skipBytes, imgBytes, 0, imgBytes.Length);
+                ImageBlock imageBlock = new ImageBlock(bytes, bMIH.Width.HexToInt(), bMIH.Height.HexToInt(), bMIH.BitCount.HexToInt());
+
+                Bitmap encodedBitmap = imageBlock.GetBitmap();
+                ShowBitmap(encodedBitmap);
+            }
+        }
     }
 }
